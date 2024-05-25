@@ -65,31 +65,32 @@ if task == "summarization":
             model_name, train_type,
             output_attentions=False,
         )
-        train_loader, tokenizer = dataset_loader(
-            dataset_name=dataset_name,
-            split="train",
-            tokenizer_name=model_name,
-            model_name=model_name,
-            max_input_length=max_input_length, 
-            batch_size=batch_size,
-            shuffle=True,
-            keep_in_memory=True,
-            print_info=False,
-        )
+        if phase == "train":
+            train_loader, tokenizer = dataset_loader(
+                dataset_name=dataset_name,
+                split="train",
+                tokenizer_name=model_name,
+                model_name=model_name,
+                max_input_length=max_input_length, 
+                batch_size=batch_size,
+                shuffle=True,
+                keep_in_memory=True,
+                print_info=False,
+            )
 
-        val_loader, _ = dataset_loader(
-            dataset_name=dataset_name,
-            split="validation",
-            tokenizer_name=model_name,
-            model_name=model_name,
-            max_input_length=max_input_length, 
-            batch_size=batch_size,
-            shuffle=False,
-            keep_in_memory=True,
-            print_info=False,
-        )
+            val_loader, _ = dataset_loader(
+                dataset_name=dataset_name,
+                split="validation",
+                tokenizer_name=model_name,
+                model_name=model_name,
+                max_input_length=max_input_length, 
+                batch_size=batch_size,
+                shuffle=False,
+                keep_in_memory=True,
+                print_info=False,
+            )
 
-        test_loader, _ = dataset_loader(
+        test_loader, tokenizer = dataset_loader(
             dataset_name=dataset_name,
             split="test",
             tokenizer_name=model_name,
@@ -100,23 +101,44 @@ if task == "summarization":
             keep_in_memory=True,
             print_info=False,
         )
-        my_trainer = train.Trainer(
-            train_loader=train_loader,
-            val_loader=val_loader,
-            test_loader=test_loader,
-            model=model,
-            train_type=train_type,
-            tokenizer=tokenizer,
-            max_output_length=max_output_length,
-            model_path=model_path,
-        )
+        
+        if phase == "train":
+            my_trainer = train.Green_Trainer(
+                train_loader=train_loader,
+                val_loader=val_loader,
+                test_loader=test_loader,
+                model=model,
+                model_type=model_name,
+                train_type=train_type,
+                tokenizer=tokenizer,
+                max_output_length=max_output_length,
+                model_path=model_path,
+            )
+        elif phase == 'evaluate':
+            my_trainer = train.Green_Trainer(
+                train_loader=test_loader,
+                val_loader=test_loader,
+                test_loader=test_loader,
+                model=model,
+                model_type=model_name,
+                train_type=train_type,
+                tokenizer=tokenizer,
+                max_output_length=max_output_length,
+                model_path=model_path,
+            )
+        
         if phase == 'train':
             my_trainer.train(
                 learning_rate=2e-5,
-                num_epochs=5,
-                log_dir=f"logs/{model_name.replace('/', '_')}_{train_type}"
+                num_epochs=1,
+                input_length=max_input_length,
+                output_length=max_output_length,
+                batch_size=batch_size,
+                rho=rho,
+                log_dir=f"logs/{model_name.replace('/', '_')}_{train_type}_{rho}"
             )
         elif phase == 'evaluate':
+            print("avaliando gt")
             my_trainer.evaluate()
 
     elif scheme == 'green_trainer':
@@ -129,31 +151,32 @@ if task == "summarization":
             model_name, train_type,
             output_attentions=False,
         )
-        train_loader, tokenizer = dataset_loader(
-            dataset_name=dataset_name,
-            split="train",
-            tokenizer_name=model_name,
-            model_name=model_name,
-            max_input_length=max_input_length, 
-            batch_size=batch_size,
-            shuffle=True,
-            keep_in_memory=True,
-            print_info=False,
-        )
+        if phase == "train":
+            train_loader, tokenizer = dataset_loader(
+                dataset_name=dataset_name,
+                split="train",
+                tokenizer_name=model_name,
+                model_name=model_name,
+                max_input_length=max_input_length, 
+                batch_size=batch_size,
+                shuffle=True,
+                keep_in_memory=True,
+                print_info=False,
+            )
 
-        val_loader, _ = dataset_loader(
-            dataset_name=dataset_name,
-            split="validation",
-            tokenizer_name=model_name,
-            model_name=model_name,
-            max_input_length=max_input_length, 
-            batch_size=batch_size,
-            shuffle=False,
-            keep_in_memory=True,
-            print_info=False,
-        )
+            val_loader, _ = dataset_loader(
+                dataset_name=dataset_name,
+                split="validation",
+                tokenizer_name=model_name,
+                model_name=model_name,
+                max_input_length=max_input_length, 
+                batch_size=batch_size,
+                shuffle=False,
+                keep_in_memory=True,
+                print_info=False,
+            )
 
-        test_loader, _ = dataset_loader(
+        test_loader, tokenizer = dataset_loader(
             dataset_name=dataset_name,
             split="test",
             tokenizer_name=model_name,
@@ -165,21 +188,35 @@ if task == "summarization":
             print_info=False,
         )
 
-        my_trainer = train.Green_Trainer(
-            train_loader=train_loader,
-            val_loader=val_loader,
-            test_loader=test_loader,
-            model=model,
-            model_type=model_name,
-            train_type=train_type,
-            tokenizer=tokenizer,
-            max_output_length=max_output_length,
-            model_path=model_path,
-        )
+        if phase == "train":
+            my_trainer = train.Green_Trainer(
+                train_loader=train_loader,
+                val_loader=val_loader,
+                test_loader=test_loader,
+                model=model,
+                model_type=model_name,
+                train_type=train_type,
+                tokenizer=tokenizer,
+                max_output_length=max_output_length,
+                model_path=model_path,
+            )
+        elif phase == 'evaluate':
+            my_trainer = train.Green_Trainer(
+                train_loader=test_loader,
+                val_loader=test_loader,
+                test_loader=test_loader,
+                model=model,
+                model_type=model_name,
+                train_type=train_type,
+                tokenizer=tokenizer,
+                max_output_length=max_output_length,
+                model_path=model_path,
+            )
+        
         if phase == 'train':
             my_trainer.train(
                 learning_rate=2e-5,
-                num_epochs=5,
+                num_epochs=1,
                 input_length=max_input_length,
                 output_length=max_output_length,
                 batch_size=batch_size,
@@ -187,6 +224,7 @@ if task == "summarization":
                 log_dir=f"logs/{model_name.replace('/', '_')}_{train_type}_{rho}"
             )
         elif phase == 'evaluate':
+            print("avaliando gt")
             my_trainer.evaluate()
 elif task == "qa":
     if scheme == 'baselines':
@@ -260,7 +298,7 @@ elif task == "qa":
         if task == 'train':
             my_trainer.train(
                 learning_rate=2e-5,
-                num_epochs=5,
+                num_epochs=1,
                 log_dir=f"logs/{model_name.replace('/', '_')}_{train_type}"
             )
         elif task == 'evaluate':
@@ -339,7 +377,7 @@ elif task == "qa":
         if task == 'train':
             my_trainer.train(
                 learning_rate=2e-5,
-                num_epochs=5,
+                num_epochs=1,
                 input_length=max_input_length,
                 output_length=max_output_length,
                 batch_size=batch_size,

@@ -19,7 +19,7 @@ def dataset_loader(
     """load a dataset ready for training
     
     Supported: `xsum`, `samsum`, `cnn_dailymail`, 
-    `scitldr`, `duorcp`, `duorcs`.
+    `scitldr`, `duorcp`, `duorcs`, `recognasumm`.
     """
     
     if dataset_name == "xsum":
@@ -110,9 +110,128 @@ def dataset_loader(
             keep_in_memory=keep_in_memory,
             print_info=print_info,
         )
+    elif dataset_name == "recognasumm":
+        dataloader, tokenizer = load_recognasumm(
+            split=split,
+            tokenizer_name=tokenizer_name,
+            model_name=model_name,
+            max_input_length=max_input_length,
+            batch_size=batch_size,
+            shuffle=shuffle,
+            keep_in_memory=keep_in_memory,
+            print_info=print_info,
+        )
     else:
         raise NotImplementedError(f"{dataset_name} hasn't been implemented yet!")
     
+    return dataloader, tokenizer
+
+
+def load_recognasumm(
+    split,
+    tokenizer_name,
+    model_name,
+    max_input_length,
+    batch_size,
+    shuffle=True,
+    keep_in_memory=False,
+    print_info=False,
+):
+    """load recogna-nlp/recognasumm dataset
+    train: 81.2k, valid: 27.1k, test: 27.1k
+    """
+    
+    dataset = load_dataset(
+        "recogna-nlp/recognasumm", split=split, 
+        keep_in_memory=keep_in_memory,
+    )
+    if 'opt' in model_name:
+        tokenizer = AutoTokenizer.from_pretrained(tokenizer_name, use_fast=False)
+    else:
+        tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
+    
+    if print_info:
+        print("train: 81.2k, valid: 27.1k, test: 27.1k")    
+        
+    def _tokenize_fn(strings):
+        """Tokenize a list of strings, memorize source length"""
+        tokenizer.padding_side = "right" 
+        tokenized_list = [
+            tokenizer(
+                text,
+                max_length=max_input_length,
+                padding="max_length", 
+                truncation=True,
+                return_tensors="pt",
+            )
+            for text in strings
+        ]
+        input_ids = labels = [tokenized.input_ids[0] for tokenized in tokenized_list]
+        attention_mask = [tokenized.attention_mask[0] for tokenized in tokenized_list]
+        input_ids_lens = labels_lens = [
+            mask.sum().item() - 1 for mask in attention_mask
+        ]
+        return dict(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            labels=labels,
+            input_ids_lens=input_ids_lens,
+            labels_lens=labels_lens,
+        )   
+    
+    def _truncate_context(context, max_length=896): ## TODO: ver tamanho maximo depois
+        context_tokens = tokenizer(context)
+        truncate_ratio = max_length / (len(context_tokens["input_ids"]) + 1e-5)
+        if truncate_ratio < 1:
+            return context[:int(len(context) * truncate_ratio)]
+        else:
+            return context 
+    
+    def preprocess_fn(raw_examples):
+        """preprocess example strings, mask source part in labels"""
+        sources = [
+            f"{_truncate_context(context)} TL;DR: " for context in raw_examples['Noticia']
+        ]
+        examples = [
+            f"{_truncate_context(context)} TL;DR: {summary}" for context, summary in zip(raw_examples['Noticia'], raw_examples['Sumario'])
+        ]
+        # left-padded source for validation & testing
+        tokenizer.padding_side = "left"
+        
+        if 'gpt2' in model_name:
+            tokenizer.pad_token = tokenizer.eos_token
+            
+        lp_sources = tokenizer(
+            sources,
+            max_length=max_input_length,
+            padding="max_length", 
+            truncation=True,
+            return_tensors="pt",
+        )
+        
+        examples_tokenized, sources_tokenized = [_tokenize_fn(strings) for strings in (examples, sources)]
+        input_ids = examples_tokenized["input_ids"]
+        attention_mask = examples_tokenized["attention_mask"]
+        labels = copy.deepcopy(input_ids)
+        for label, source_len in zip(labels, sources_tokenized["input_ids_lens"]):
+            label[:source_len] = -100 # mask source
+            label[label == tokenizer.pad_token_id] = -100 # mask paddings
+        return dict(
+            input_ids=input_ids, 
+            attention_mask=attention_mask, 
+            labels=labels, 
+            input_ids_lens=sources_tokenized["input_ids_lens"],
+            lp_sources=lp_sources["input_ids"])
+    
+    processed_dataset = dataset.map(preprocess_fn, batched=True)
+    processed_dataset.set_format(
+        type="torch", columns=["input_ids", "attention_mask", "labels", "input_ids_lens", "lp_sources"]
+    )
+    dataloader = DataLoader(
+        processed_dataset, shuffle=shuffle, 
+        collate_fn=default_data_collator, 
+        batch_size=batch_size, pin_memory=True,
+    )
     return dataloader, tokenizer
 
 
