@@ -178,7 +178,7 @@ class Trainer:
             )
             
             # Adiciona all_results à lista
-            all_results_list.append(all_results)
+            all_results_list.append({"outputs_text": all_results["outputs_text"]})
             
             # Calcula as métricas de sumário usando ROUGE
             summarization_results = self.rouge_metric.compute(
@@ -234,7 +234,7 @@ class Trainer:
             )
             
             # Adiciona all_results à lista
-            all_results_list.append(all_results)
+            all_results_list.append({"outputs_text": all_results["outputs_text"]})
             
             # Calcula as métricas de sumário usando ROUGE
             summarization_results = self.rouge_metric.compute(
@@ -530,7 +530,7 @@ class Green_Trainer:
             )
             
             # Adiciona all_results à lista
-            all_results_list.append(all_results)
+            all_results_list.append({"outputs_text": all_results["outputs_text"]})
             
             # Calcula as métricas de sumário usando ROUGE
             summarization_results = self.rouge_metric.compute(
@@ -622,7 +622,7 @@ class Green_Trainer:
                 )
                 
                 # Adiciona all_results à lista
-                all_results_list.append(all_results)
+                all_results_list.append({"outputs_text": all_results["outputs_text"]})
                 
                 summarization_results = self.rouge_metric.compute(predictions=all_results["outputs_text"], references=all_results["labels_text"])
                 
