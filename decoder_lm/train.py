@@ -204,6 +204,9 @@ class Trainer:
         m_rougeL /= total_count
         m_rougeLsum /= total_count
         print(f"On validation/test set, rouge1={100*m_rouge1}, rouge2={100*m_rouge2}, rougeL={100*m_rougeL}, rougeLsum={100*m_rougeLsum}")
+        
+        with open('rouge.txt', 'a') as file:
+            file.write(f"On test set, rouge1={100*m_rouge1}, rouge2={100*m_rouge2}, rougeL={100*m_rougeL}, rougeLsum={100*m_rougeLsum}\n")
 
     def evaluate(self):
         self._load_model()
@@ -260,6 +263,9 @@ class Trainer:
         m_rougeL /= total_count
         m_rougeLsum /= total_count
         print(f"On test set, rouge1={100*m_rouge1}, rouge2={100*m_rouge2}, rougeL={100*m_rougeL}, rougeLsum={100*m_rougeLsum}")
+        
+        with open('rouge.txt', 'a') as file:
+            file.write(f"On test set, rouge1={100*m_rouge1}, rouge2={100*m_rouge2}, rougeL={100*m_rougeL}, rougeLsum={100*m_rougeLsum}\n")
     
     def _save_model(self):
         self.model.save_pretrained(self.model_path)
@@ -556,6 +562,9 @@ class Green_Trainer:
         m_rougeL /= total_count
         m_rougeLsum /= total_count
         print(f"On validation/test set, rouge1={100*m_rouge1}, rouge2={100*m_rouge2}, rougeL={100*m_rougeL}, rougeLsum={100*m_rougeLsum}")
+        
+        with open('rouge.txt', 'a') as file:
+            file.write(f"On test set, rouge1={100*m_rouge1}, rouge2={100*m_rouge2}, rougeL={100*m_rougeL}, rougeLsum={100*m_rougeLsum}\n")
 
         
     def _runtime_evaluate(self, dataset):
@@ -643,6 +652,9 @@ class Green_Trainer:
         m_rougeL /= total_count
         m_rougeLsum /= total_count
         print(f"On test set, rouge1={100*m_rouge1}, rouge2={100*m_rouge2}, rougeL={100*m_rougeL}, rougeLsum={100*m_rougeLsum}")
+        
+        with open('rouge.txt', 'a') as file:
+            file.write(f"On test set, rouge1={100*m_rouge1}, rouge2={100*m_rouge2}, rougeL={100*m_rougeL}, rougeLsum={100*m_rougeLsum}\n")
     
     def _save_model(self):
         self.model.save_pretrained(self.model_path)
