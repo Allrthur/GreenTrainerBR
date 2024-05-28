@@ -2,6 +2,13 @@ import numpy as np
 import os
 from collections import Counter
 from tqdm import tqdm
+from evaluate import load
+
+
+def bertscore(references, predictions, lang="pt"):
+    bertscore = load("bertscore")
+    results = bertscore.compute(predictions=predictions, references=references, lang=lang)
+    return results
 
 
 # def count_tokens(dataset, tokenizer):
@@ -135,3 +142,11 @@ def f1_score(prediction_tokens, ground_truth_tokens):
     recall = 1.0 * num_same / len(ground_truth_tokens)
     f1 = (2 * precision * recall) / (precision + recall)
     return f1
+
+if __name__ == "__main__":
+    import pandas as pd
+
+    # load archive with preds
+    df = pd.read_json("results/generated_to_bertscore.json", orient="index")
+    bscore = bertscore(df["label"], df["generated"])
+    print(bscore)
