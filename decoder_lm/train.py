@@ -113,7 +113,7 @@ class Trainer:
             self._save_model()
             
         print(f"Total Time: {total_time} (s)")
-        #self._runtime_evaluate_wsave(self.test_loader)
+        self._runtime_evaluate_wsave(self.test_loader)
     
     def _runtime_evaluate(self, dataset):
         self.model.eval()

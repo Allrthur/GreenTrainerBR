@@ -59,3 +59,14 @@ python3 main.py --model_name monilouise/opt125M_portuguese \
                 --max_output_length 128 \
                 --batch_size 4 \
                 --rho 0.7
+
+
+# LoRA
+echo '### LoRA'
+python3 main.py --model_name monilouise/opt125M_portuguese \
+                --dataset_name recognasumm \
+                --scheme baselines \
+                --train_type lora \
+                --max_input_length 512 \
+                --max_output_length 128 \
+                --batch_size 4

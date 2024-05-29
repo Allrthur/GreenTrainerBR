@@ -103,29 +103,29 @@ if task == "summarization":
         )
         
         if phase == "train":
-            my_trainer = train.Green_Trainer(
-                train_loader=train_loader,
-                val_loader=val_loader,
-                test_loader=test_loader,
-                model=model,
-                model_type=model_name,
-                train_type=train_type,
-                tokenizer=tokenizer,
-                max_output_length=max_output_length,
-                model_path=model_path,
-            )
+            my_trainer = train.Trainer(
+            train_loader=train_loader,
+            val_loader=val_loader,
+            test_loader=test_loader,
+            model=model,
+            model_type=model,
+            train_type=train_type,
+            tokenizer=tokenizer,
+            max_output_length=max_output_length,
+            model_path=model_path,
+        )
         elif phase == 'evaluate':
-            my_trainer = train.Green_Trainer(
-                train_loader=test_loader,
-                val_loader=test_loader,
-                test_loader=test_loader,
-                model=model,
-                model_type=model_name,
-                train_type=train_type,
-                tokenizer=tokenizer,
-                max_output_length=max_output_length,
-                model_path=model_path,
-            )
+            my_trainer = train.Trainer(
+            train_loader=test_loader,
+            val_loader=test_loader,
+            test_loader=test_loader,
+            model=model,
+            model_type=model,
+            train_type=train_type,
+            tokenizer=tokenizer,
+            max_output_length=max_output_length,
+            model_path=model_path,
+        )
         
         if phase == 'train':
             my_trainer.train(
