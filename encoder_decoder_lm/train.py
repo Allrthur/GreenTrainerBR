@@ -3,6 +3,7 @@ import evaluate
 import time
 from peft import PeftModel
 from tqdm import tqdm
+import json
 from torch.utils.tensorboard import SummaryWriter
 from transformers import get_linear_schedule_with_warmup, AutoModelForSeq2SeqLM
 from utils import generate_response
@@ -101,7 +102,56 @@ class Trainer:
             self._save_model()
             
         print(f"Total Time: {total_time} (s)")
-        self._runtime_evaluate(self.test_loader)
+        self._runtime_evaluate_wsave(self.test_loader)
+        
+    def _runtime_evaluate_wsave(self, dataset):
+        self.model.eval()
+        # for summarization
+        m_rouge1 = 0
+        m_rouge2 = 0
+        m_rougeL = 0
+        m_rougeLsum = 0
+        
+        total_count = 0
+        all_results_list = []
+        with torch.no_grad():
+            for step, batch in enumerate(tqdm(dataset)):
+                batch = {k: v.to(self.device) for k, v in batch.items()}
+                batch_size = batch['input_ids'].shape[0]
+                    
+                all_results = generate_response(
+                    self.model, 
+                    self.train_type,
+                    self.tokenizer, 
+                    batch['input_ids'], batch['labels'],
+                    max_length=self.max_output_length
+                )
+                
+                # Adiciona all_results à lista
+                all_results_list.append({"outputs_text": all_results["outputs_text"]})
+                
+                summarization_results = self.rouge_metric.compute(predictions=all_results["outputs_text"], references=all_results["labels_text"])
+                
+                m_rouge1 += (summarization_results['rouge1'] * batch_size)
+                m_rouge2 += (summarization_results['rouge2'] * batch_size)
+                m_rougeL += (summarization_results['rougeL'] * batch_size)
+                m_rougeLsum += (summarization_results['rougeLsum'] * batch_size)
+                
+                total_count += batch_size
+                
+        # Salvar a lista completa em um arquivo JSON após o loop
+        output_file = 'all_results.json'
+        with open(output_file, 'w') as f:
+            json.dump(all_results_list, f)
+        
+        m_rouge1 /= total_count
+        m_rouge2/= total_count
+        m_rougeL /= total_count
+        m_rougeLsum /= total_count
+        print(f"On test set, rouge1={100*m_rouge1}, rouge2={100*m_rouge2}, rougeL={100*m_rougeL}, rougeLsum={100*m_rougeLsum}")
+        
+        with open('rouge.txt', 'a') as file:
+            file.write(f"On test set, rouge1={100*m_rouge1}, rouge2={100*m_rouge2}, rougeL={100*m_rougeL}, rougeLsum={100*m_rougeLsum}\n")
     
     def _runtime_evaluate(self, dataset):
         self.model.eval()
@@ -402,7 +452,57 @@ class Green_Trainer:
         print(f"Total GreenTrainer Backward GFLOPs: {len(self.train_loader) * np.sum(total_bp_flops):.2f}")
         print(f"Total GreenTrainer GFLOPs: {len(self.train_loader) * np.sum(total_bfp_flops):.2f}")
         print(f"Total GreenTrainer GFLOPs Speedup: {np.mean(total_bfp_speedup):.2f}x")
-        self._runtime_evaluate(self.test_loader)
+        self._runtime_evaluate_wsave(self.test_loader)
+        
+    def _runtime_evaluate_wsave(self, dataset):
+        self.model.eval()
+        # for summarization
+        m_rouge1 = 0
+        m_rouge2 = 0
+        m_rougeL = 0
+        m_rougeLsum = 0
+        
+        total_count = 0
+        all_results_list = []
+        with torch.no_grad():
+            for step, batch in enumerate(tqdm(dataset)):
+                batch = {k: v.to(self.device) for k, v in batch.items()}
+                batch_size = batch['input_ids'].shape[0]
+                    
+                all_results = generate_response(
+                    self.model, 
+                    self.train_type,
+                    self.tokenizer, 
+                    batch['input_ids'], batch['labels'],
+                    max_length=self.max_output_length
+                )
+                
+                # Adiciona all_results à lista
+                all_results_list.append({"outputs_text": all_results["outputs_text"]})
+                
+                summarization_results = self.rouge_metric.compute(predictions=all_results["outputs_text"], references=all_results["labels_text"])
+                
+                m_rouge1 += (summarization_results['rouge1'] * batch_size)
+                m_rouge2 += (summarization_results['rouge2'] * batch_size)
+                m_rougeL += (summarization_results['rougeL'] * batch_size)
+                m_rougeLsum += (summarization_results['rougeLsum'] * batch_size)
+                
+                total_count += batch_size
+                
+        # Salvar a lista completa em um arquivo JSON após o loop
+        output_file = 'all_results.json'
+        with open(output_file, 'w') as f:
+            json.dump(all_results_list, f)
+        
+        m_rouge1 /= total_count
+        m_rouge2/= total_count
+        m_rougeL /= total_count
+        m_rougeLsum /= total_count
+        print(f"On test set, rouge1={100*m_rouge1}, rouge2={100*m_rouge2}, rougeL={100*m_rougeL}, rougeLsum={100*m_rougeLsum}")
+        
+        with open('rouge.txt', 'a') as file:
+            file.write(f"On test set, rouge1={100*m_rouge1}, rouge2={100*m_rouge2}, rougeL={100*m_rougeL}, rougeLsum={100*m_rougeLsum}\n")
+
     
     def _runtime_evaluate(self, dataset):
         self.model.eval()

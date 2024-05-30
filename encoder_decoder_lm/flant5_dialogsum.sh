@@ -39,3 +39,19 @@ python3 main.py --model_name $MODEL_NAME \
                 --max_input_length 512 \
                 --max_output_length 128 \
                 --batch_size 4
+
+python3 main.py --model_name "unicamp-dl/ptt5-base-portuguese-vocab" \
+                --dataset_name recognasumm \
+                --scheme baselines \
+                --train_type full_finetuning \
+                --max_input_length 512 \
+                --max_output_length 128 \
+                --batch_size 4
+
+python3 main.py --model_name "unicamp-dl/ptt5-base-portuguese-vocab" \
+                --dataset_name recognasumm \
+                --scheme green_trainer \
+                --max_input_length 512 \
+                --max_output_length 128 \
+                --batch_size 4 \
+                --rho 0.7

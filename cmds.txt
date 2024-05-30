@@ -2,3 +2,7 @@ chmod +x requirements.sh
 ./requirements.sh
 pip install tensorboard
 pip install --upgrade datasets
+
+
+#pro flan
+pip install sentencepiece

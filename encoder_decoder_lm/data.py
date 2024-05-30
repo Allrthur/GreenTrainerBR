@@ -94,11 +94,79 @@ def dataset_loader(
             keep_in_memory=keep_in_memory,
             print_info=print_info,
         )
+    elif dataset_name == "recognasumm":
+        dataloader, tokenizer = load_recognasumm(
+            split=split,
+            tokenizer_name=tokenizer_name,
+            max_input_length=max_input_length,
+            max_output_length=max_output_length,
+            batch_size=batch_size,
+            prefix=prefix,
+            shuffle=shuffle,
+            keep_in_memory=keep_in_memory,
+            print_info=print_info,
+        )
     else:
         raise NotImplementedError(f"{dataset_name} hasn't been implemented yet!")
     
     return dataloader, tokenizer
 
+def load_recognasumm(    split,
+    tokenizer_name,
+    max_input_length,
+    max_output_length,
+    batch_size,
+    prefix="Sumarize: ",
+    shuffle=True,
+    keep_in_memory=False,
+    print_info=False,
+):
+    """load recogna-nlp/recognasumm dataset
+    train: 81.2k, valid: 27.1k, test: 27.1k
+    """
+    
+    dataset = load_dataset(
+        "recogna-nlp/recognasumm", split=split, 
+        keep_in_memory=keep_in_memory,
+    )
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
+    
+    if print_info:
+        print("train: 81.2k, valid: 27.1k, test: 27.1k")
+    
+    def preprocess_fn(examples):
+        prefixed_inputs = [
+            prefix + doc for doc in examples["Noticia"]
+        ]      
+        tokenized_inputs = tokenizer(
+            prefixed_inputs, 
+            max_length=max_input_length,
+            padding="max_length", 
+            truncation=True,
+            return_tensors="pt",
+        )    
+        tokenized_labels = tokenizer(
+            examples["Sumario"], 
+            max_length=max_output_length, 
+            padding="max_length", 
+            truncation=True, 
+            return_tensors="pt",
+        )
+        labels = tokenized_labels["input_ids"]
+        labels[labels == tokenizer.pad_token_id] = -100
+        tokenized_inputs["labels"] = labels
+        return tokenized_inputs
+    
+    processed_dataset = dataset.map(preprocess_fn, batched=True)
+    processed_dataset.set_format(
+        type="torch", columns=["input_ids", "attention_mask", "labels"]
+    )
+    dataloader = DataLoader(
+        processed_dataset, shuffle=shuffle, 
+        collate_fn=default_data_collator, 
+        batch_size=batch_size, pin_memory=True,
+    )
+    return dataloader, tokenizer
 
 def load_xsum(
     split,

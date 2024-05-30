@@ -22,7 +22,7 @@ from utils import make_folders
 
 parser = argparse.ArgumentParser(description='parser for training encoder-decoder models')
 parser.add_argument('--model_name', type=str, default='google/flan-t5-base', help='flan t5 series')
-parser.add_argument('--prefix', type=str, default='summarize: ', help='prefix of input strings')
+parser.add_argument('--prefix', type=str, default='sumarize: ', help='prefix of input strings')
 parser.add_argument('--dataset_name', type=str, default='scitldr', help='samsum, xsum, cnndailymail, durocs, scitldr or dialogsum')
 parser.add_argument('--scheme', type=str, default='green_trainer', help='baselines or green_trainer')
 parser.add_argument('--train_type', type=str, default='full_finetuning', help='full_finetuning or lora')
@@ -58,33 +58,34 @@ if scheme == 'baselines':
         model_name, train_type,
         output_attentions=False,
     )
-    train_loader, tokenizer = dataset_loader(
-        dataset_name=dataset_name,
-        split="train",
-        tokenizer_name=model_name,
-        max_input_length=max_input_length, 
-        max_output_length=max_output_length,
-        batch_size=batch_size,
-        prefix=prefix,
-        shuffle=True,
-        keep_in_memory=True,
-        print_info=False,
-    )
+    if task == "train":
+        train_loader, tokenizer = dataset_loader(
+            dataset_name=dataset_name,
+            split="train",
+            tokenizer_name=model_name,
+            max_input_length=max_input_length, 
+            max_output_length=max_output_length,
+            batch_size=batch_size,
+            prefix=prefix,
+            shuffle=True,
+            keep_in_memory=True,
+            print_info=False,
+        )
 
-    val_loader, _ = dataset_loader(
-        dataset_name=dataset_name,
-        split="validation",
-        tokenizer_name=model_name,
-        max_input_length=max_input_length, 
-        max_output_length=max_output_length,
-        batch_size=batch_size,
-        prefix=prefix,
-        shuffle=False,
-        keep_in_memory=True,
-        print_info=False,
-    )
+        val_loader, _ = dataset_loader(
+            dataset_name=dataset_name,
+            split="validation",
+            tokenizer_name=model_name,
+            max_input_length=max_input_length, 
+            max_output_length=max_output_length,
+            batch_size=batch_size,
+            prefix=prefix,
+            shuffle=False,
+            keep_in_memory=True,
+            print_info=False,
+        )
 
-    test_loader, _ = dataset_loader(
+    test_loader, tokenizer = dataset_loader(
         dataset_name=dataset_name,
         split="test",
         tokenizer_name=model_name,
@@ -96,21 +97,32 @@ if scheme == 'baselines':
         keep_in_memory=True,
         print_info=False,
     )
-
-    my_trainer = Trainer(
-        train_loader=train_loader,
-        val_loader=val_loader,
-        test_loader=test_loader,
-        model=model,
-        train_type=train_type,
-        tokenizer=tokenizer,
-        max_output_length=max_output_length,
-        model_path=model_path,
-    )
+    if task == "train":
+        my_trainer = Trainer(
+            train_loader=train_loader,
+            val_loader=val_loader,
+            test_loader=test_loader,
+            model=model,
+            train_type=train_type,
+            tokenizer=tokenizer,
+            max_output_length=max_output_length,
+            model_path=model_path,
+        )
+    if task == "evaluate":
+        my_trainer = Trainer(
+            train_loader=test_loader,
+            val_loader=test_loader,
+            test_loader=test_loader,
+            model=model,
+            train_type=train_type,
+            tokenizer=tokenizer,
+            max_output_length=max_output_length,
+            model_path=model_path,
+        )
     if task == 'train':
         my_trainer.train(
             learning_rate=2e-5,
-            num_epochs=5,
+            num_epochs=1,
             log_dir=f"logs/{model_name.replace('/', '_')}_{train_type}"
         )
     elif task == 'evaluate':
@@ -125,31 +137,32 @@ elif scheme == 'green_trainer':
         model_name, train_type,
         output_attentions=False,
     )
-    train_loader, tokenizer = dataset_loader(
-        dataset_name=dataset_name,
-        split="train",
-        tokenizer_name=model_name,
-        max_input_length=max_input_length, 
-        max_output_length=max_output_length,
-        batch_size=batch_size,
-        prefix=prefix,
-        shuffle=True,
-        keep_in_memory=True,
-        print_info=False,
-    )
+    if task == "train":
+        train_loader, tokenizer = dataset_loader(
+            dataset_name=dataset_name,
+            split="train",
+            tokenizer_name=model_name,
+            max_input_length=max_input_length, 
+            max_output_length=max_output_length,
+            batch_size=batch_size,
+            prefix=prefix,
+            shuffle=True,
+            keep_in_memory=True,
+            print_info=False,
+        )
 
-    val_loader, _ = dataset_loader(
-        dataset_name=dataset_name,
-        split="validation",
-        tokenizer_name=model_name,
-        max_input_length=max_input_length, 
-        max_output_length=max_output_length,
-        batch_size=batch_size,
-        prefix=prefix,
-        shuffle=False,
-        keep_in_memory=True,
-        print_info=False,
-    )
+        val_loader, _ = dataset_loader(
+            dataset_name=dataset_name,
+            split="validation",
+            tokenizer_name=model_name,
+            max_input_length=max_input_length, 
+            max_output_length=max_output_length,
+            batch_size=batch_size,
+            prefix=prefix,
+            shuffle=False,
+            keep_in_memory=True,
+            print_info=False,
+        )
 
     test_loader, _ = dataset_loader(
         dataset_name=dataset_name,
@@ -163,22 +176,34 @@ elif scheme == 'green_trainer':
         keep_in_memory=True,
         print_info=False,
     )
-
-    my_trainer = Green_Trainer(
-        train_loader=train_loader,
-        val_loader=val_loader,
-        test_loader=test_loader,
-        model=model,
-        model_type=model_name,
-        train_type=train_type,
-        tokenizer=tokenizer,
-        max_output_length=max_output_length,
-        model_path=model_path,
-    )
+    if task == "train":
+        my_trainer = Green_Trainer(
+            train_loader=train_loader,
+            val_loader=val_loader,
+            test_loader=test_loader,
+            model=model,
+            model_type=model_name,
+            train_type=train_type,
+            tokenizer=tokenizer,
+            max_output_length=max_output_length,
+            model_path=model_path,
+        )
+    if task == "evaluate":
+        my_trainer = Green_Trainer(
+            train_loader=test_loader,
+            val_loader=test_loader,
+            test_loader=test_loader,
+            model=model,
+            model_type=model_name,
+            train_type=train_type,
+            tokenizer=tokenizer,
+            max_output_length=max_output_length,
+            model_path=model_path,
+        )
     if task == 'train':
         my_trainer.train(
             learning_rate=2e-5,
-            num_epochs=5,
+            num_epochs=1,
             input_length=max_input_length,
             output_length=max_output_length,
             batch_size=batch_size,
