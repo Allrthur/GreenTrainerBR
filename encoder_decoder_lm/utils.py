@@ -3,28 +3,13 @@ import os
 from collections import Counter
 from tqdm import tqdm
 from evaluate import load
+from statistics import mean
 
 
 def bertscore(references, predictions, lang="pt"):
     bertscore = load("bertscore")
     results = bertscore.compute(predictions=predictions, references=references, lang=lang)
     return results
-
-
-# def count_tokens(dataset, tokenizer):
-#     num_input_tokens = []
-#     num_output_tokens = []
-#     print("###### Analyzing dataset...")
-#     for example in tqdm(dataset):
-#         input_tokens = tokenizer(example['document'], add_special_tokens=False)
-#         output_tokens = tokenizer(example['summary'], add_special_tokens=False)
-#         num_input_tokens.append(len(input_tokens['input_ids']))
-#         num_output_tokens.append(len(output_tokens['input_ids']))
-#     print("###### Number of tokens (input, output) #####")
-#     print(f"total: ({np.sum(num_input_tokens)}, {np.sum(num_output_tokens)})")
-#     print(f"mean: ({np.mean(num_input_tokens)}, {np.sum(num_output_tokens)})")
-#     print(f"max: ({np.max(num_input_tokens)}, {np.sum(num_output_tokens)})")
-#     print(f"min: ({np.min(num_input_tokens)}, {np.sum(num_output_tokens)})")
 
 def make_folders(*paths):
     for path in paths:
@@ -61,7 +46,6 @@ def flops_counter(model, t_fp, t_dy, t_dw):
         "full_bfp":full_bfp_flops,
     }
     return flops
-
 
 def generate_response(
     model, 
@@ -104,7 +88,6 @@ def generate_response(
         "outputs_tokens": outputs_tokens,
     }
 
-
 def compute_squad_metric(tokenizer, predictions, references):
     f1 = exact_match = 0
 
@@ -125,13 +108,11 @@ def compute_squad_metric(tokenizer, predictions, references):
     
     return {"f1": 100*f1/len(predictions), "EM": 100*exact_match/len(predictions)}
 
-
 def exact_match_score(prediction_tokens, ground_truth_tokens):
     if len(ground_truth_tokens) == len(prediction_tokens):
         if all(token1 == token2 for token1, token2 in zip(ground_truth_tokens, prediction_tokens)):
             return 1
     return 0
-
 
 def f1_score(prediction_tokens, ground_truth_tokens):
     common = Counter(prediction_tokens) & Counter(ground_truth_tokens)
@@ -144,9 +125,30 @@ def f1_score(prediction_tokens, ground_truth_tokens):
     return f1
 
 if __name__ == "__main__":
+    import os
     import pandas as pd
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--exp_name", type=str)
+    args = parser.parse_args()
+    
 
     # load archive with preds
-    df = pd.read_json("results/generated_to_bertscore.json", orient="index")
+    df = pd.read_json(f"/home/arthur/Documents/Trab/ML/GreenTrainerBR/results/{args.exp_name}.json", orient="index")
     bscore = bertscore(df["label"], df["generated"])
-    print(bscore)
+    # if not os.path.exists("results/bert_score/results_bert_score"):
+    #     os.mkdirs("results/bert_score/", exists_ok=True)
+    #     with open("results/bert_score/results_bert_score.csv", mode="w") as file: file.write("experiment,precision,recall,f1\n")
+    # else:
+
+    experiment = "opt-175_gt05"
+    precision = mean(bscore["precision"])
+    recall = mean(bscore["recall"])
+    f1 = mean(bscore["f1"])
+    with open("results_bert_score.csv", mode="a") as file: file.write(f"{experiment},{precision},{recall},{f1}\n")
+
+
+    print("precision:\t", precision)
+    print("recall:\t", recall)
+    print("f1:\t", f1)
